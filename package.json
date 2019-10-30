@@ -10,6 +10,9 @@
     "type": "git",
     "url": "https://github.com/lysadmin/lyseo-bussit.git"
   },
+  "bin": {
+    "bussit": "./bin/bussit"
+  },
   "author": "Mikko Ankkala",
   "license": "MIT",
   "dependencies": {

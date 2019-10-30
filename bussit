@@ -1,0 +1,91 @@
+#!/usr/bin/env node
+
+const fetch = require("node-fetch")
+const { DateTime } = require("luxon")
+const chalk = require('chalk');
+
+const query = `
+{
+    stopsByRadius(lat: 65.015761, lon: 25.472504, radius: 500) {
+        edges {
+            node {
+                stop {
+                    name
+                    stoptimesWithoutPatterns(numberOfDepartures: 10) {
+                        scheduledDeparture
+                        realtimeDeparture
+                        serviceDay
+                        trip {
+                            route {
+                                shortName
+                                longName
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+`
+
+const filter = (process.argv[2] || "").toLowerCase()
+
+fetch('https://api.oulunliikenne.fi/proxy/graphql', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+        query,
+    })
+})
+    .then(response => response.json())
+    .then(response => response.data.stopsByRadius.edges.map(edge => edge.node.stop))
+    .then(stops => stops.filter(stop => stop.name.toLowerCase().includes(filter)))
+    .then(stops => stops.map(stop => ({
+        name: stop.name,
+        departures: stop.stoptimesWithoutPatterns.map(stopTime => ({
+            line: `${stopTime.trip.route.shortName.padEnd(3, " ")} (${stopTime.trip.route.longName})`,
+            scheduledTimestamp: stopTime.scheduledDeparture,
+            actualTimestamp: stopTime.realtimeDeparture,
+            scheduledTime: DateTime.fromMillis((stopTime.serviceDay + stopTime.scheduledDeparture) * 1000).toFormat("HH:mm"),
+            actualTime: DateTime.fromMillis((stopTime.serviceDay + stopTime.realtimeDeparture) * 1000).toFormat("HH:mm")
+        })),
+    })))
+    .then(result => result.forEach(stop => {
+        console.log(stop.name)
+        console.log("=".repeat(stop.name.length))
+        stop.departures.forEach((departure) => {
+            const { scheduledTime, line } = departure
+            console.log(`    ${scheduledTime} ${getScheduleDeviationText(departure)} ${line}`)
+        })
+        console.log("")
+    }))
+
+const EMPTY_FILLER = " ".repeat("-> HH:MM".length)
+
+const getScheduleDeviationText = (departure) => {
+    const { scheduledTime, actualTime, scheduledTimestamp, actualTimestamp } = departure
+    if (scheduledTime === actualTime) {
+        return EMPTY_FILLER
+    }
+    const color = getColor(scheduledTimestamp, actualTimestamp)
+    return `-> ${color(actualTime)}`
+}
+
+const getColor = (scheduledTimestamp, actualTimestamp) => {
+    if (Math.abs(scheduledTimestamp - actualTimestamp) < 120) {
+        // Less than 2 minutes difference - business as usual
+        return chalk.white
+    }
+
+    if (scheduledTimestamp < actualTimestamp) {
+        // This is bad
+        return chalk.yellow
+    }
+
+    // This is the worst (the bus is early)
+    return chalk.red
+}

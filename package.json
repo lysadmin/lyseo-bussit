@@ -1,0 +1,20 @@
+{
+  "name": "lyseo-bussit",
+  "version": "1.0.0",
+  "description": "lyseolta lähtevien bussien aikataulut",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lysadmin/lyseo-bussit.git"
+  },
+  "author": "Mikko Ankkala",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "luxon": "^1.21.0",
+    "node-fetch": "^2.6.0"
+  }
+}

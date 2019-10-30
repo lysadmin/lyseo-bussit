@@ -4,9 +4,15 @@ const fetch = require("node-fetch")
 const { DateTime } = require("luxon")
 const chalk = require('chalk');
 
+/**
+ * Coordinates of Lyseo (will change in the future)
+ */
+const LYSEO_LAT = 65.015761
+const LYSEO_LON = 25.472504
+
 const query = `
 {
-    stopsByRadius(lat: 65.015761, lon: 25.472504, radius: 500) {
+    stopsByRadius(lat: ${LYSEO_LAT}, lon: ${LYSEO_LON}, radius: 500) {
         edges {
             node {
                 stop {
